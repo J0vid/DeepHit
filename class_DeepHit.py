@@ -22,7 +22,6 @@ LOSS FUNCTIONS:
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.contrib.layers import fully_connected as FC_Net
 
 # user-defined functions
 import utils_network as utils
@@ -58,8 +57,8 @@ class Model_DeepHit:
 
         self.active_fn = network_settings["active_fn"]
         self.initial_W = network_settings["initial_W"]
-        self.reg_W = tf.keras.regularizers.l2(l=0.5 * (1e-4))
-        self.reg_W_out = tf.keras.regularizers.l1(l=1e-4)
+        self.reg_W = tf.keras.regularizers.l2(l2=0.5 * (1e-4))
+        self.reg_W_out = tf.keras.regularizers.l1(l1=1e-4)
 
         self._build_net()
 
@@ -131,14 +130,13 @@ class Model_DeepHit:
             out = tf.reshape(out, [-1, self.num_Event * self.h_dim_CS])
             out = tf.nn.dropout(out, rate=1 - (self.keep_prob))
 
-            out = FC_Net(
-                out,
-                self.num_Event * self.num_Category,
-                activation_fn=tf.nn.softmax,
-                weights_initializer=self.initial_W,
-                weights_regularizer=self.reg_W_out,
-                scope="Output",
-            )
+            out = tf.keras.layers.Dense(
+                units=self.num_Event * self.num_Category,  # Same number of output units
+                activation="softmax",  # Equivalent activation function
+                kernel_initializer=self.initial_W,  # Replaces weights_initializer
+                kernel_regularizer=self.reg_W_out,  # Replaces weights_regularizer
+                name="Output",  # Replaces scope
+            )(out)
             self.out = tf.reshape(out, [-1, self.num_Event, self.num_Category])
 
             # GET LOSS FUNCTIONS

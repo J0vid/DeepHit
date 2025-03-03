@@ -8,6 +8,10 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 tensorflow = "^2.18.0"
+lifelines = "^0.30.0"
+pandas = "^2.2.3"
+scikit-learn = "^1.6.1"
+numpy = "2.0.2"
 
 
 [tool.poetry.group.dev.dependencies]

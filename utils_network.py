@@ -8,7 +8,6 @@ Modifcation List:
 """
 
 import tensorflow as tf
-from tensorflow.contrib.layers import fully_connected as FC_Net
 
 
 # CONSTRUCT MULTICELL FOR MULTI-LAYER RNNS
@@ -23,13 +22,13 @@ def create_rnn_cell(num_units, num_layers, keep_prob, RNN_type):
     cells = []
     for _ in range(num_layers):
         if RNN_type == "GRU":
-            cell = tf.compat.v1.nn.rnn_cell.GRUCell(num_units)
+            cell = tf.keras.layers.GRUCell(num_units)
         elif RNN_type == "LSTM":
-            cell = tf.compat.v1.nn.rnn_cell.LSTMCell(num_units)
+            cell = tf.keras.layers.LSTMCell(num_units)
         if keep_prob is not None:
-            cell = tf.contrib.rnn.DropoutWrapper(cell, output_keep_prob=keep_prob)
+            cell = tf.keras.layers.Dropout(1 - keep_prob)(cell)
         cells.append(cell)
-    cell = tf.compat.v1.nn.rnn_cell.MultiRNNCell(cells)
+        cell = tf.keras.layers.RNN(cells, return_sequences=True, return_state=True)
 
     return cell
 
@@ -88,43 +87,39 @@ def create_FCNet(
 
     for layer in range(num_layers):
         if num_layers == 1:
-            out = FC_Net(
-                inputs,
+            out = tf.keras.layers.Dense(
                 o_dim,
-                activation_fn=o_fn,
-                weights_initializer=w_init,
-                weights_regularizer=w_reg,
-            )
+                activation=o_fn,
+                kernel_initializer=w_init,
+                kernel_regularizer=w_reg,
+            )(inputs)
         else:
             if layer == 0:
-                h = FC_Net(
-                    inputs,
+                h = tf.keras.layers.Dense(
                     h_dim,
-                    activation_fn=h_fn,
-                    weights_initializer=w_init,
-                    weights_regularizer=w_reg,
-                )
+                    activation=h_fn,
+                    kernel_initializer=w_init,
+                    kernel_regularizer=w_reg,
+                )(inputs)
                 if keep_prob is not None:
-                    h = tf.nn.dropout(h, rate=1 - (keep_prob))
+                    h = tf.keras.layers.Dropout(1 - keep_prob)(h)
 
-            elif layer > 0 and layer != (num_layers - 1):  # layer > 0:
-                h = FC_Net(
-                    h,
+            elif layer > 0 and layer != (num_layers - 1):  # Hidden layers
+                h = tf.keras.layers.Dense(
                     h_dim,
-                    activation_fn=h_fn,
-                    weights_initializer=w_init,
-                    weights_regularizer=w_reg,
-                )
+                    activation=h_fn,
+                    kernel_initializer=w_init,
+                    kernel_regularizer=w_reg,
+                )(h)
                 if keep_prob is not None:
-                    h = tf.nn.dropout(h, rate=1 - (keep_prob))
+                    h = tf.keras.layers.Dropout(1 - keep_prob)(h)
 
-            else:  # layer == num_layers-1 (the last layer)
-                out = FC_Net(
-                    h,
+            else:  # Last layer
+                out = tf.keras.layers.Dense(
                     o_dim,
-                    activation_fn=o_fn,
-                    weights_initializer=w_init,
-                    weights_regularizer=w_reg,
-                )
+                    activation=o_fn,
+                    kernel_initializer=w_init,
+                    kernel_regularizer=w_reg,
+                )(h)
 
     return out
